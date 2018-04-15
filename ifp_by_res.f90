@@ -32,10 +32,12 @@ program IFP_aromatic
   character :: IFP*3000
   character :: filename*256
 
+  integer,allocatable   :: nIFP_hydrophobic(:)
   integer,allocatable   :: nIFP_polar(:) 
   integer,allocatable   :: nIFP_naromatic_f2f(:)
   integer,allocatable   :: nIFP_naromatic_e2f(:)
-    
+
+  integer*1,allocatable :: nhydrophobic(:)
   integer*1,allocatable :: npolar(:)
   integer*1,allocatable :: naromatic_f2f(:)
   integer*1,allocatable :: naromatic_e2f(:)
@@ -63,21 +65,26 @@ program IFP_aromatic
 ! End of manual configuration. 
   
 
+allocate(nIFP_hydrophobic(nres))
 allocate(nIFP_polar(nres))
 allocate(nIFP_naromatic_f2f(nres))
 allocate(nIFP_naromatic_e2f(nres))
 
+allocate(nhydrophobic(nres))
 allocate(npolar(nres))
 allocate(naromatic_f2f(nres))
 allocate(naromatic_e2f(nres))
 
 ! Zero out vectors 
+nIFP_hydrophobic=0
 nIFP_polar=0
 nIFP_naromatic_f2f=0
 nIFP_naromatic_e2f=0
 
 do i=1,nlines
    
+  ! Zero out temporary
+  nhydrophobic=0
   npolar=0 
   naromatic_f2f=0
   naromatic_e2f=0
@@ -86,6 +93,11 @@ do i=1,nlines
 
   k=1 !counter for residue
   do j=1,nres*nbits,nbits
+
+  ! Check if residue has any hydrophobic IFPs
+    if (index(IFP(j:j),"1") /= 0) then
+       nhydrophobic(k)=1
+    endif
 
   ! Check if residue has any polar IFPs (pi-cation or metal)
     if (index(IFP(j+3:j+8),"1") /= 0) then
@@ -103,6 +115,7 @@ do i=1,nlines
     endif
 
   ! Counter for number of molecules with polar IFP to the current residue
+    nIFP_hydrophobic(k)=nIFP_hydrophobic(k)+nhydrophobic(k)
     nIFP_polar(k)=nIFP_polar(k)+npolar(k)
     nIFP_naromatic_f2f(k)=nIFP_naromatic_f2f(k)+naromatic_f2f(k)
     nIFP_naromatic_e2f(k)=nIFP_naromatic_e2f(k)+naromatic_e2f(k)
@@ -114,6 +127,7 @@ enddo
 !    write(*,'(A,51(",",i1))') trim(name), npolar
   enddo
 
+  write(*,'(A,51(",",i5))') "          Hydrophobic",nIFP_hydrophobic
   write(*,'(A,51(",",i5))') "                Polar",nIFP_polar
   write(*,'(A,51(",",i5))') "Aromatic Face-to-Face",nIFP_naromatic_f2f
   write(*,'(A,51(",",i5))') "Aromatic Edge-to-Face",nIFP_naromatic_e2f
